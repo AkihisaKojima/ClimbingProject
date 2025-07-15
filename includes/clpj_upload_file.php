@@ -23,9 +23,9 @@ function clpj_handle_file_upload(){
                 $upload_file = wp_handle_upload($file_data, $upload_overrides);
 
                 if( !empty($_POST[$img_file.'_check'])){
-                    $result = CLpj_insert_picture_org( $img_file, $today, $upload_file['url'], true);
+                    CLpj_insert_picture_org( $img_file, $today, $upload_file['url'], true);
                 }else{
-                    $result = CLpj_insert_picture_org( $img_file, $today, $upload_file['url'], false);
+                    CLpj_insert_picture_org( $img_file, $today, $upload_file['url'], false);
                 }
 
             }

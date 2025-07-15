@@ -37,12 +37,13 @@ function CLpj_create_table( $table_name) {
                 `date` date NOT NULL,
                 `url` varchar(375) NOT NULL,
                 `additional` boolean NOT NULL DEFAULT false,
-                PRIMARY KEY (picture_org, date)
+                PRIMARY KEY (url)
             ) ".$wpdb->get_charset_collate().";";
 
         } elseif($table_name == 'CLpj_picture_project'){
             $sql = "CREATE TABLE ".$target_table_name." (
                 `picture_project` varchar(100) NOT NULL,
+                `createtime` datetime NOT NULL,
                 `url` varchar(375) NOT NULL,
                 `grade_org` float,
                 `setter` varchar(100) NOT NULL,
@@ -83,13 +84,20 @@ function CLpj_insert_picture_org( $picture_org, $date, $url, $additional){
     global $wpdb;
     $target_table_name = $wpdb->prefix .'CLpj_picture_org';
 
-    $sql = $wpdb->prepare("
-        INSERT INTO ".$target_table_name." ( picture_org, date, url, additional)
-        SELECT * FROM (SELECT %s AS 'picture_org', %s AS 'date', %s AS 'url', %s AS 'additional') AS tmp
-        WHERE NOT EXISTS (
-            SELECT * FROM ".$target_table_name."
-            WHERE picture_org = %s and date = %s
-        )", $picture_org, $date, $url, $additional, $picture_org, $date);
+    if( $additional){
+        $sql = $wpdb->prepare("
+            INSERT INTO ".$target_table_name." ( picture_org, date, url, additional)
+            SELECT * FROM (SELECT %s AS 'picture_org', %s AS 'date', %s AS 'url', %s AS 'additional') AS tmp
+            ", $picture_org, $date, $url, $additional);
+    }else{
+        $sql = $wpdb->prepare("
+            INSERT INTO ".$target_table_name." ( picture_org, date, url, additional)
+            SELECT * FROM (SELECT %s AS 'picture_org', %s AS 'date', %s AS 'url', %s AS 'additional') AS tmp
+            WHERE NOT EXISTS (
+                SELECT * FROM ".$target_table_name."
+                WHERE picture_org = %s and date = %s
+            )", $picture_org, $date, $url, $additional, $picture_org, $date);
+    }
     $wpdb->query($sql);
 
 }
@@ -145,7 +153,6 @@ function CLpj_select_picture_project( $picture_project, $setter, $grade_max, $gr
     }else{
         $result = CLpj_select_picture_org( 'CLpj_Wall_0', false);
     }
-    error_log($result);
     $setDay = $result['date'];
 
     $sqlFragment_where = 'WHERE createtime > '. $setDay;

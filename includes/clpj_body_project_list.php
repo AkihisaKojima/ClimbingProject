@@ -117,8 +117,8 @@ function CLpj_body_project_list( $content) {
         $projectList = CLpj_select_picture_project( $picture_project, $setter, $grade_max, $grade_min);
     }else{
         $projectList = [];
-        foreach( $wall_list as $wall){
-            $result = CLpj_select_picture_project( $wall, $setter, $grade_max, $grade_min);
+        for( $i = 0; $i < count($wall_list); $i++){
+            $result = CLpj_select_picture_project( 'clpj_Wall_'.$i, $setter, $grade_max, $grade_min);
             $projectList = array_merge($projectList, $result);
         }
     }
@@ -200,11 +200,11 @@ function CLpj_body_project_list( $content) {
 }
 
 function CLpj_plotSlider( $grade){
-    $grade = $grade-1;
-    $grade_list = explode(',', get_option('clpj_grade_list'));
-    $plot = '';
-
     if( $grade != '' and $grade >= 0){
+        $grade = $grade-1;
+        $grade_list = explode(',', get_option('clpj_grade_list'));
+        $plot = '';
+
         $grade_min = intval($grade);
         $grade_max = intval($grade+1);
         $minGrade = $grade_list[$grade_min];
