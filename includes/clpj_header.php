@@ -14,13 +14,6 @@ function CLpj_request_handler(){
         exit;
     }
 
-    // ログイン処理（POST送信時）
-    if( isset($_POST['clpj_login_name'])){
-        $user_name = $_POST['clpj_login_name'];
-        setcookie('clpj_user_name', $user_name, time()+36000, '/');
-        $result = CLpj_insert_user( $user_name);
-    }
-
     // 壁写真アップロードにadmin以外でアクセスしたらリダイレクト
     if( is_page('clpj_admin_upload')){
         if( !isadmin()){
@@ -134,4 +127,5 @@ function isadmin(){
 
 
 // End of File
+
 
