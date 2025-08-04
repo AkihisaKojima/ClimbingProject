@@ -80,26 +80,23 @@ function CLpj_insert_user( $user_name){
 
 
 // 壁写真テーブル
-function CLpj_insert_picture_org( $picture_org, $date, $url, $additional){
+function CLpj_insert_picture_org( $picture_org, $date, $url, bool $additional){
     global $wpdb;
     $target_table_name = $wpdb->prefix .'CLpj_picture_org';
-
-    if( $additional){
-        $sql = $wpdb->prepare("
-            INSERT INTO ".$target_table_name." ( picture_org, date, url, additional)
-            SELECT * FROM (SELECT %s AS 'picture_org', %s AS 'date', %s AS 'url', %s AS 'additional') AS tmp
-            ", $picture_org, $date, $url, $additional);
+    if($additional){
+        $additional = 1;
     }else{
-        $sql = $wpdb->prepare("
-            INSERT INTO ".$target_table_name." ( picture_org, date, url, additional)
-            SELECT * FROM (SELECT %s AS 'picture_org', %s AS 'date', %s AS 'url', %s AS 'additional') AS tmp
-            WHERE NOT EXISTS (
-                SELECT * FROM ".$target_table_name."
-                WHERE picture_org = %s and date = %s
-            )", $picture_org, $date, $url, $additional, $picture_org, $date);
+        $additional = 0;
     }
-    $wpdb->query($sql);
 
+    $sql = $wpdb->prepare("
+        INSERT INTO ".$target_table_name." ( picture_org, date, url, additional)
+        SELECT * FROM (SELECT %s AS 'picture_org', %s AS 'date', %s AS 'url', %d AS 'additional') AS tmp
+        WHERE NOT EXISTS (
+            SELECT * FROM ".$target_table_name."
+            WHERE picture_org = %s and date = %s
+        )", $picture_org, $date, $url, $additional, $picture_org, $date);
+    $wpdb->query($sql);
 }
 
 
@@ -108,7 +105,7 @@ function CLpj_select_picture_org( $picture_org, bool $additional){
     $target_table_name = $wpdb->prefix .'CLpj_picture_org';
 
     $sqlFragment_additional = '';
-    if( !$additional){ $sqlFragment_additional = ' and additional = false';}
+    if( !$additional){ $sqlFragment_additional = ' and additional = 0';}
 
     $sql = $wpdb->prepare("
         SELECT * FROM ".$target_table_name."
@@ -118,7 +115,6 @@ function CLpj_select_picture_org( $picture_org, bool $additional){
 
     $result = $wpdb->get_row( $sql, ARRAY_A, 0);
     return $result;
-
 }
     
 
@@ -243,5 +239,6 @@ function CLpj_update_user_log( $userName, $datetime, $type, $value){
     CLpj_insert_user_log( $userName, $datetime, $type, $value);
 
 }
+
 
 // End of File
