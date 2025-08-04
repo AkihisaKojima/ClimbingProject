@@ -15,19 +15,10 @@ function CLpj_request_handler(){
     }
 
     // ログイン処理（POST送信時）
-/*    if( isset($_POST['clpj_login_name'])){
-        $user = get_user_by('login', sanitize_user($_POST['clpj_login_name']));
-        if( !empty($use_wp_user)){
-            if ( $user) {
-                wp_set_current_user($user->ID);
-                wp_set_auth_cookie($user->ID);
-            }
-        }else{
-            $user_name = $_POST['clpj_login_name'];
-            setcookie('clpj_user_name', $user_name, time()+36000, '/');
-            $result = CLpj_insert_user( $user_name);
-        }
-    } */
+    if( isset($_POST['clpj_login_name'])){
+        setcookie('clpj_user_name', $user_name, time()+36000, '/');
+        $result = CLpj_insert_user( $user_name);
+    }
 
     // 壁写真アップロードにadmin以外でアクセスしたらリダイレクト
     if( is_page('clpj_admin_upload')){
@@ -139,5 +130,6 @@ function isadmin(){
         return false;
     }
 }
+
 
 // End of File
