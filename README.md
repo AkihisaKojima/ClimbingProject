@@ -1,5 +1,5 @@
 # 1. インストール方法
-## a)Local/WordPressのインストール
+### a)Local/WordPressのインストール
 [このサイト（www.kagoya.jp）](https://www.kagoya.jp/howto/rentalserver/wppractice/wp_local/)を参考にPCにLocal/WordPressをインストール
 
 ・Localをダウンロード・インストール
@@ -9,15 +9,15 @@
 ・WordPressのダッシュボードへログイン
 
 
-## b)プラグインのインストール
+### b)プラグインのインストール
 
 
-## c)テーマの設定
+### c)テーマの設定
 
 # 2. 利用方法
-## a)管理者
+### a)管理者
 ### 　　初期設定
 ### 　　壁画像のアップロード
-## b)ユーザ
+### b)ユーザ
 ### 　　課題の検索
 ### 　　課題作成
