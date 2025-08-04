@@ -28,9 +28,9 @@ function CLpj_admin_menu_page_content() {
     $grade_list_min = $grade_list[0];
     $grade_list_max = $grade_list[count($grade_list)-1];
 
-	$completed_message = get_option('clpj_completed_message');
-	$completed_btn = get_option('clpj_completed_btn');
-	$evaluate_btn = get_option('clpj_evaluate_btn');
+    $completed_message = get_option('clpj_completed_message');
+    $completed_btn = get_option('clpj_completed_btn');
+    $evaluate_btn = get_option('clpj_evaluate_btn');
     $admin_name = get_option('clpj_admin_name');
     $admin_pass = get_option('clpj_admin_pass');
 
@@ -120,15 +120,15 @@ function CLpj_admin_menu_page_content() {
 
             <table class="form-table">
                 <tr>
-                    <th scope="row"><label for="clpj_completed_message">完登ボタンを押した時の応答メッセージ</label></th>
-                    <td><input type="text" name="clpj_completed_message" id="clpj_completed_message" value="<?php echo esc_attr($completed_message); ?>" class="regular-text" /></td>
+                    <th scope="row"><label for="clpj_completed_btn">完登ボタンに表示する言葉</label></th>
+                    <td><input type="text" name="clpj_completed_btn" id="clpj_completed_btn" value="<?php echo esc_attr($completed_btn); ?>" class="regular-text" /></td>
                 </tr>
             </table>
 
             <table class="form-table">
                 <tr>
-                    <th scope="row"><label for="clpj_completed_btn">完登ボタンに表示する言葉</label></th>
-                    <td><input type="text" name="clpj_completed_btn" id="clpj_completed_btn" value="<?php echo esc_attr($completed_btn); ?>" class="regular-text" /></td>
+                    <th scope="row"><label for="clpj_completed_message">完登ボタンを押した時の応答メッセージ</label></th>
+                    <td><input type="text" name="clpj_completed_message" id="clpj_completed_message" value="<?php echo esc_attr($completed_message); ?>" class="regular-text" /></td>
                 </tr>
             </table>
 
@@ -186,7 +186,6 @@ function CLpj_admin_menu_setting_option() {
         $wall_list = '';
         while( isset($_POST['clpj_wall_name_'.$i]) and !empty($_POST['clpj_wall_name_'.$i])){
             $wall_list = $wall_list . $_POST['clpj_wall_name_'.$i] . ',';
-            error_log($wall_list);
             $i++;
         }
         if(strlen($wall_list) > 0){$wall_list = substr($wall_list, 0, -1);}
@@ -204,12 +203,12 @@ function CLpj_admin_menu_setting_option() {
             update_option('clpj_grade_list', sanitize_text_field($str_list));
         }
 
-        if( isset($_POST['clpj_completed_message'])){
-            update_option('clpj_completed_message', sanitize_text_field($_POST['clpj_completed_message']));
-        }
-
         if( !empty($_POST['clpj_completed_btn'])){
             update_option('clpj_completed_btn', sanitize_text_field($_POST['clpj_completed_btn']));
+        }
+
+        if( isset($_POST['clpj_completed_message'])){
+            update_option('clpj_completed_message', sanitize_text_field($_POST['clpj_completed_message']));
         }
 
         if( !empty($_POST['clpj_evaluate_btn'])){
@@ -235,3 +234,4 @@ function CLpj_admin_menu_setting_option() {
 
 
 // End of File
+
