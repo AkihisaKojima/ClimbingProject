@@ -16,6 +16,7 @@ function CLpj_request_handler(){
 
     // ログイン処理（POST送信時）
     if( isset($_POST['clpj_login_name'])){
+        $user_name = $_POST['clpj_login_name'];
         setcookie('clpj_user_name', $user_name, time()+36000, '/');
         $result = CLpj_insert_user( $user_name);
     }
@@ -133,3 +134,4 @@ function isadmin(){
 
 
 // End of File
+
