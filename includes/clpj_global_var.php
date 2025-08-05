@@ -21,7 +21,7 @@ $CLpj_completed_message = 'ナイッス～';
 global $CLpj_completed_btn;
 $CLpj_completed_btn = '完登したよ ^^';
 global $CLpj_evaluate_btn;
-$CLpj_evaluate_btn = 'グレードを評価する';
+$CLpj_evaluate_btn = 'グレード評価を送信';
 
 
 global $CLpj_pages;
@@ -47,6 +47,7 @@ $CLpj_pages = [
         'post_content' => ''
     ]
 ];
+
 
 
 
