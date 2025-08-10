@@ -241,14 +241,18 @@ window.addEventListener('load', function (event) {
     // ポインタCanvasのマウスイベント処理
     // マウスクリックイベント
     pointerCvs.addEventListener('mousedown', pointerCvs_mouseDown);
+    pointerCvs.addEventListener('touchstart', pointerCvs_mouseDown, { passive: false });
     // マウス移動イベント
     pointerCvs.addEventListener('mousemove', pointerCvs_mouseMove);
+    pointerCvs.addEventListener('touchmove', pointerCvs_mouseMove, { passive: false });
     // マウスクリック外しイベント
     pointerCvs.addEventListener('mouseup', pointerCvs_mouseUp);
+    pointerCvs.addEventListener('touchend', pointerCvs_mouseUp, { passive: false });
     // マウスホイールイベント(パッシブでないリスナーとして登録)
     pointerCvs.addEventListener('wheel', pointerCvs_mouseWheel, { passive: false });
     // エリアから外れたときのイベント
     pointerCvs.addEventListener('mouseout', pointerCvs_mouseOut);
+    pointerCvs.addEventListener('touchcancel', pointerCvs_mouseOut, { passive: false });
 
 });
 
@@ -275,15 +279,25 @@ function restoreState_drawCanvas(restoreState) {
 
 // マウスクリックイベント
 function pointerCvs_mouseDown(e) {
+    e.preventDefault();
     saveState_drawCanvas();
 
+    const rect = pointerCvs.getBoundingClientRect()
     holdClick = true;
-    startX = e.offsetX;
-    startY = e.offsetY;
+    if (e.touches && e.touches.length > 0) {
+        startX = e.touches[0].clientX - rect.left;
+        startY = e.touches[0].clientY - rect.top;
+    }else{
+        startX = e.clientX - rect.left;
+        startY = e.clientY - rect.top;
+    }
+
 }
 
 // マウス移動イベント
 function pointerCvs_mouseMove(e) {
+    e.preventDefault();
+
     draw_pointerCvs(e);
     if (holdClick) {
         erase_drawCvs(e);
@@ -292,6 +306,8 @@ function pointerCvs_mouseMove(e) {
 
 // マウスクリック外しイベント
 function pointerCvs_mouseUp(e) {
+    e.preventDefault();
+
     holdClick = false;
     erase_drawCvs(e);
 }
@@ -318,6 +334,8 @@ function pointerCvs_mouseWheel(e) {
 
 // エリアから外れたときのイベント
 function pointerCvs_mouseOut(e) {
+    e.preventDefault();
+
     // ポインター除去
     pointerCtx.clearRect(0, 0, imageCvs.width, imageCvs.height)
     // マウスクリック外しイベントを呼び出し
@@ -374,28 +392,46 @@ function draw_pointerCvs(e) {
     pointerCtx.lineWidth = document.getElementById('clpj_brushSize').innerHTML; // 太さ
     pointerCtx.lineCap = 'round'; // 円
 
+    const rect = pointerCvs.getBoundingClientRect()
+    if (e.touches && e.touches.length > 0) {
+        offsetX = e.touches[0].clientX - rect.left;
+        offsetY = e.touches[0].clientY - rect.top;
+    }else{
+        offsetX = e.clientX - rect.left;
+        offsetY = e.clientY - rect.top;
+    }
+
     pointerCtx.beginPath();
-    pointerCtx.moveTo(e.offsetX, e.offsetY);
-    pointerCtx.lineTo(e.offsetX, e.offsetY); // 開始座標と終了座標を同じ
+    pointerCtx.moveTo(offsetX, offsetY);
+    pointerCtx.lineTo(offsetX, offsetY); // 開始座標と終了座標を同じ
     pointerCtx.stroke(); // 描画
     pointerCtx.closePath();
 }
 
 // drawCanvasエリア描画(消しゴム)
 function erase_drawCvs(e) {
+    const rect = pointerCvs.getBoundingClientRect()
+    if (e.touches && e.touches.length > 0) {
+        offsetX = e.touches[0].clientX - rect.left;
+        offsetY = e.touches[0].clientY - rect.top;
+    }else{
+        offsetX = e.clientX - rect.left;
+        offsetY = e.clientY - rect.top;
+    }
+
     drawCtx.lineWidth = document.getElementById('clpj_brushSize').innerHTML;
     drawCtx.lineCap = 'round'; // 先端の形状
     drawCtx.strokeStyle = 'rgba(0, 0, 0, 1)'; // 色はなんでもよいが、透過度は1にする
     drawCtx.globalCompositeOperation = 'destination-out' // 塗りつぶした個所を透明化
     drawCtx.beginPath();
     drawCtx.moveTo(startX, startY); // 開始座標（前回座標）
-    drawCtx.lineTo(e.offsetX, e.offsetY); // 終了座標（現在座標）
+    drawCtx.lineTo(offsetX, offsetY); // 終了座標（現在座標）
     drawCtx.stroke(); // 描画
     drawCtx.closePath();
 
     // 次の描画に向けて現在の座標を保持（開始座標・終了座標を同じ座標にしてしまうと、マウスを高速に移動したときに歯抜け状態になる）
-    startX = e.offsetX;
-    startY = e.offsetY;
+    startX = offsetX;
+    startY = offsetY;
 }
 
 // drawCanvasをクリア
