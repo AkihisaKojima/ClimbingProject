@@ -149,7 +149,12 @@ function CLpj_select_picture_project( $picture_project, $setter, $grade_max, $gr
     }else{
         $result = CLpj_select_picture_org( 'CLpj_Wall_0', false);
     }
-    $setDay = $result['date'];
+
+    if(!empty($result)){
+        $setDay = $result['date'];
+    }else{
+        $setDay = "1900-01-01";
+    }
 
     $sqlFragment_where = 'WHERE createtime > '. $setDay;
     if( !empty($picture_project) or !empty($setter) or !empty($grade_max) or !empty($grade_min) ){

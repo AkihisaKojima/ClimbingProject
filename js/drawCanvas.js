@@ -2,8 +2,14 @@ let holdClick = false;  // クリックホールドフラグ
 let startX = 0;  // 開始座標(X)
 let startY = 0;  // 開始座標(Y)
 let dispScale = 1;  // 拡大縮小スケール
+const MAX_SCALE = 3;  // 拡大の最大値
+let pointers = new Map();  // ポイント用マップ
+let distance = 0;  // 指２本でタッチした時の指間の距離
+let centerX = 0;  // 指２本でタッチした時の平均座標(X)
+let centerY = 0;  // 指２本でタッチした時の平均座標(Y)
 
 // 各Canvas
+const canvasArea = document.getElementById('clpj_canvas-area');
 let imageCvs;
 let imageCtx;
 let drawCvs;
@@ -14,11 +20,13 @@ let orgWidth;
 let orgHeight;
 
 // Undo/Redo
+let saveState = false;  // saveフラグ
 const undoStack = [];
 const redoStack = [];
 const MAX_HISTORY = 20;
 
 const img = new Image();
+const lineStack = [];
 
 
 // イベントリスナー登録（DOMContentLoaded）
@@ -31,15 +39,14 @@ document.addEventListener('DOMContentLoaded', function () {
     drawCtx = drawCvs.getContext("2d", { willReadFrequently: true });
     pointerCtx = pointerCvs.getContext("2d", { willReadFrequently: true });
 
-
     // 画像Canvasの描画処理
     const selectElement = document.getElementById('clpj_select_wall');
     selectElement.addEventListener('change', function(event){
         const selectedValue = event.target.value;
-        const canvasArea = document.getElementById('clpj_canvas-area');
         dispScale = 1;
 
         if (selectedValue == '0') {
+            document.getElementById('clpj_btn_postFile').disabled = true;
         } else if (selectedValue == '1') {
             img.src = document.getElementById('clpj_tmpImg_0').innerText;
         } else if (selectedValue == '2') {
@@ -86,6 +93,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
             imageCtx.drawImage(img, 0, 0, imageCvs.width, imageCvs.height);
             clear_drawCanvas();
+            lineStack.length = 0;
+            undoStack.length = 0;
+            redoStack.length = 0;
         };
     }); // ここまで：画像Canvasの描画処理
 
@@ -100,14 +110,17 @@ document.addEventListener('DOMContentLoaded', function () {
     // Undo ボタン押下
     const btnUndo = document.getElementById('clpj_btn_undo');
     btnUndo.addEventListener('click', function(event){
-        const currentState = drawCtx.getImageData(0, 0, drawCvs.width, drawCvs.height);
-        redoStack.push(currentState);
-        const prevState = undoStack.pop();
+        const tmpStack = [];
+        const tmp = lineStack.length - undoStack.pop();
+        for(let i=0; i < tmp; i++){
+            tmpStack.push(lineStack.pop());
+        }
 
-        restoreState_drawCanvas(prevState);
+        redoStack.push(tmpStack);
+        restoreState_drawCanvas();
 
         document.getElementById('clpj_btn_redo').disabled = false;
-        if(undoStack.length <= 1) {
+        if(undoStack.length <= 0) {
             document.getElementById('clpj_btn_undo').disabled = true;
         }
     });
@@ -116,11 +129,14 @@ document.addEventListener('DOMContentLoaded', function () {
     // Redo ボタン押下
     const btnRedo = document.getElementById('clpj_btn_redo');
     btnRedo.addEventListener('click', function(event){
-        const currentState = drawCtx.getImageData(0, 0, drawCvs.width, drawCvs.height);
-        undoStack.push(currentState);
-        const nextState = redoStack.pop();
+        undoStack.push(lineStack.length);
 
-        restoreState_drawCanvas(nextState);
+        const tmpStack = redoStack.pop();
+        const tmp = tmpStack.length;
+        for(let i=0; i < tmp; i++){
+            lineStack.push(tmpStack.pop());
+        }
+        restoreState_drawCanvas();
 
         document.getElementById('clpj_btn_undo').disabled = false;
         if(redoStack.length <= 0) {
@@ -133,7 +149,16 @@ document.addEventListener('DOMContentLoaded', function () {
     const selectGrade = document.getElementById('clpj_select_grade');
     selectGrade.addEventListener('change', function(event){
         const selectGrade = event.target.value;
+        const selectedValue = event.target.value;
+        //const selectElement = document.getElementById('clpj_select_wall');
 
+        if (selectGrade == '0') {
+            document.getElementById('clpj_btn_postFile').disabled = true;
+        }else{
+            document.getElementById('clpj_btn_postFile').disabled = false;
+        }
+
+/*
         if (selectGrade == '0') {
             document.getElementById('clpj_btn_postFile').disabled = true;
         } else if (selectGrade == '1') {
@@ -167,7 +192,7 @@ document.addEventListener('DOMContentLoaded', function () {
         } else if (selectGrade == '15') {
             document.getElementById('clpj_btn_postFile').disabled = false;
         }
-
+*/
     });
 
     // 「投稿」ボタン
@@ -240,19 +265,15 @@ document.addEventListener('DOMContentLoaded', function () {
 window.addEventListener('load', function (event) {
     // ポインタCanvasのマウスイベント処理
     // マウスクリックイベント
-    pointerCvs.addEventListener('mousedown', pointerCvs_mouseDown);
-    pointerCvs.addEventListener('touchstart', pointerCvs_mouseDown, { passive: false });
+    pointerCvs.addEventListener('pointerdown', pointerCvs_pointerDown, { passive: false });
     // マウス移動イベント
-    pointerCvs.addEventListener('mousemove', pointerCvs_mouseMove);
-    pointerCvs.addEventListener('touchmove', pointerCvs_mouseMove, { passive: false });
+    pointerCvs.addEventListener('pointermove', pointerCvs_pointerMove, { passive: false });
     // マウスクリック外しイベント
-    pointerCvs.addEventListener('mouseup', pointerCvs_mouseUp);
-    pointerCvs.addEventListener('touchend', pointerCvs_mouseUp, { passive: false });
+    pointerCvs.addEventListener('pointerup', pointerCvs_pointerUp, { passive: false });
     // マウスホイールイベント(パッシブでないリスナーとして登録)
     pointerCvs.addEventListener('wheel', pointerCvs_mouseWheel, { passive: false });
     // エリアから外れたときのイベント
-    pointerCvs.addEventListener('mouseout', pointerCvs_mouseOut);
-    pointerCvs.addEventListener('touchcancel', pointerCvs_mouseOut, { passive: false });
+    pointerCvs.addEventListener('pointerleave', pointerCvs_pointerLeave, { passive: false });
 
 });
 
@@ -262,8 +283,7 @@ function saveState_drawCanvas() {
     while (undoStack.length >= MAX_HISTORY){
         undoStack.shift(); // 古いの捨てる
     }
-    const currentState = drawCtx.getImageData(0, 0, imageCvs.width, imageCvs.height);;
-    undoStack.push(currentState);
+    undoStack.push(lineStack.length);
 
     redoStack.length = 0; // redo無効化
     document.getElementById('clpj_btn_redo').disabled = true;
@@ -271,45 +291,113 @@ function saveState_drawCanvas() {
 }
 
 // Undo/Redo用 状態復元
-function restoreState_drawCanvas(restoreState) {
-    drawCtx.putImageData( restoreState, 0, 0);
+function restoreState_drawCanvas() {
+    drawCvs.width = imageCvs.width;
+    drawCvs.height = imageCvs.height;
+    drawCtx = drawCvs.getContext("2d", { willReadFrequently: true });
+
+    clear_drawCanvas();
+    for (const line of lineStack) {
+        draw_drawCvs( line.x1 * dispScale, line.y1 * dispScale, line.x2 * dispScale, line.y2 * dispScale, line.brushSize * dispScale);
+    }
+
 }
 
 
 
 // マウスクリックイベント
-function pointerCvs_mouseDown(e) {
+function pointerCvs_pointerDown(e) {
     e.preventDefault();
-    saveState_drawCanvas();
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
-    const rect = pointerCvs.getBoundingClientRect()
-    holdClick = true;
-    if (e.touches && e.touches.length > 0) {
-        startX = e.touches[0].clientX - rect.left;
-        startY = e.touches[0].clientY - rect.top;
-    }else{
+    if(pointers.size == 1){
+        saveState = true;
+
+        const rect = pointerCvs.getBoundingClientRect()
+        holdClick = true;
         startX = e.clientX - rect.left;
         startY = e.clientY - rect.top;
+
+    } else if(pointers.size == 2){
+        holdClick = false;
+
+        const [p1, p2] = Array.from(pointers.values());
+        distance = getDistance(p1, p2);
+        centerX = (p1.x + p2.x) /2;
+        centerY = (p1.y + p2.y) /2;
     }
 
 }
 
 // マウス移動イベント
-function pointerCvs_mouseMove(e) {
+function pointerCvs_pointerMove(e) {
     e.preventDefault();
 
+    if(saveState){
+        saveState_drawCanvas();
+        saveState = false;
+    }
+
     draw_pointerCvs(e);
-    if (holdClick) {
-        erase_drawCvs(e);
+    if(pointers.size == 1){
+        if (holdClick) {
+            erase_drawCvs(e);
+        }
+
+    } else if(pointers.size == 2){
+        if (pointers.has(e.pointerId)) {
+            pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        }
+
+        const [p1, p2] = Array.from(pointers.values());
+        const new_centerX = (p1.x + p2.x) /2;
+        const new_centerY = (p1.y + p2.y) /2;
+
+        if(centerX == 0){ centerX = new_centerX;}
+        if(centerY == 0){ centerY = new_centerY;}
+        if (distance == 0) {distance = getDistance(p1, p2);}
+
+        distScale = getDistance(p1, p2) / distance;
+
+        if ((distScale < 1.2) && (distScale > 0.8)){
+            canvasArea.scrollLeft += (centerX - new_centerX);
+            canvasArea.scrollTop += (centerY - new_centerY);
+
+        } else {
+            distScale = (distScale - 1)*0.25;
+            dispScale = dispScale + distScale;
+            if (dispScale < 1) {
+                dispScale = 1;
+            } else if (dispScale > MAX_SCALE) {
+                dispScale = MAX_SCALE;
+            }
+            // 小数点第二以下切り捨て
+            dispScale = Math.round(dispScale * 10) / 10;
+            // 算出した拡大率で描画
+            zoom( centerX, centerY);            
+        }
+
+        centerX = new_centerX;
+        centerY = new_centerY;
+//        distance = getDistance(p1, p2);
     }
 }
 
 // マウスクリック外しイベント
-function pointerCvs_mouseUp(e) {
+function pointerCvs_pointerUp(e) {
     e.preventDefault();
 
-    holdClick = false;
-    erase_drawCvs(e);
+    if(holdClick){
+        holdClick = false;
+        erase_drawCvs(e);
+    }
+
+    pointers.delete(e.pointerId);
+    centerX = 0;
+    centerY = 0;
+    startX = 0;
+    startY = 0;
+
 }
 
 // マウスホイール変更イベント
@@ -317,31 +405,42 @@ function pointerCvs_mouseWheel(e) {
     // ページスクロールを無効化
     e.preventDefault();
 
+    const rect = imageCvs.getBoundingClientRect()
+    startX = e.clientX - rect.left;
+    startY = e.clientY - rect.top;
+
     // 拡大率算出
     let temp = e.deltaY < 0 ? 1 : -1;
     dispScale += (0.1 * temp);
     // 拡大率は1～5まで
     if (dispScale < 1) {
         dispScale = 1;
-    } else if (dispScale > 5) {
-        dispScale = 5;
+    } else if (dispScale > MAX_SCALE) {
+        dispScale = MAX_SCALE;
     }
     // 小数点第二以下切り捨て
-    dispScale = Math.round(dispScale * 10) / 10;
+    dispScale = Math.round(dispScale * 100) / 100;
     // 算出した拡大率で描画
     zoom();
 }
 
+// ポインター間の距離を算出
+function getDistance(p1, p2) {
+    const dx = p1.x - p2.x;
+    const dy = p1.y - p2.y;
+    return Math.sqrt(dx * dx + dy * dy);
+}
+
 // エリアから外れたときのイベント
-function pointerCvs_mouseOut(e) {
+function pointerCvs_pointerLeave(e) {
     e.preventDefault();
 
-    // ポインター除去
-    pointerCtx.clearRect(0, 0, imageCvs.width, imageCvs.height)
-    // マウスクリック外しイベントを呼び出し
-    if (holdClick) {
-        pointerCvs_mouseUp(e);
+    if(pointers.size == 1){
+        // ポインター除去
+        pointerCtx.clearRect(0, 0, imageCvs.width, imageCvs.height)
     }
+
+    pointerCvs_pointerUp(e);
 }
 
 
@@ -349,7 +448,6 @@ function pointerCvs_mouseOut(e) {
 function zoom() {
     const newWidth = orgWidth * dispScale;
     const newHeight = orgHeight * dispScale;
-    const drawData = drawCtx.getImageData(0, 0, drawCvs.width, drawCvs.height);
 
     const canvasIds = [
         'clpj_imageCanvas',
@@ -364,7 +462,7 @@ function zoom() {
         canvas.style.width = newWidth; + "px";
         canvas.style.height = newHeight; + "px";
     });
-
+    
     // 再描画（拡大率に応じて拡大して描画）
     imageCtx = imageCvs.getContext("2d", { willReadFrequently: true });
     drawCtx = drawCvs.getContext("2d", { willReadFrequently: true });
@@ -372,11 +470,25 @@ function zoom() {
     // imageData は元サイズなので、drawImage で拡大表示する
     imageCtx.drawImage(img, 0, 0, newWidth, newHeight);
 
-    const tmpDrawCanvas = document.createElement("canvas");
-    tmpDrawCanvas.width = drawData.width;
-    tmpDrawCanvas.height = drawData.height;
-    tmpDrawCanvas.getContext("2d").putImageData(drawData, 0, 0);
-    drawCtx.drawImage(tmpDrawCanvas, 0, 0, newWidth, newHeight);
+    clear_drawCanvas();
+    for (const line of lineStack) {
+        draw_drawCvs( line.x1 * dispScale, line.y1 * dispScale, line.x2 * dispScale, line.y2 * dispScale, line.brushSize * dispScale);
+    }
+
+    const Rect = imageCvs.getBoundingClientRect()
+    let offsetX = 0;
+    let offsetY = 0;
+    offsetX = (startX * dispScale) - (orgWidth*0.5);
+    offsetY = (startY * dispScale) - (orgHeight*0.5);
+
+    canvasArea.scrollLeft = offsetX;
+    canvasArea.scrollTop = offsetY;
+
+    console.error("scale:",dispScale);
+    console.error("x:",startX);
+    console.error("y:",startY);
+    console.error("x:",offsetX);
+    console.error("y:",offsetY);
 
 }// ここまで：拡大縮小処理
 
@@ -393,13 +505,8 @@ function draw_pointerCvs(e) {
     pointerCtx.lineCap = 'round'; // 円
 
     const rect = pointerCvs.getBoundingClientRect()
-    if (e.touches && e.touches.length > 0) {
-        offsetX = e.touches[0].clientX - rect.left;
-        offsetY = e.touches[0].clientY - rect.top;
-    }else{
-        offsetX = e.clientX - rect.left;
-        offsetY = e.clientY - rect.top;
-    }
+    offsetX = e.clientX - rect.left;
+    offsetY = e.clientY - rect.top;
 
     pointerCtx.beginPath();
     pointerCtx.moveTo(offsetX, offsetY);
@@ -411,15 +518,20 @@ function draw_pointerCvs(e) {
 // drawCanvasエリア描画(消しゴム)
 function erase_drawCvs(e) {
     const rect = pointerCvs.getBoundingClientRect()
-    if (e.touches && e.touches.length > 0) {
-        offsetX = e.touches[0].clientX - rect.left;
-        offsetY = e.touches[0].clientY - rect.top;
-    }else{
-        offsetX = e.clientX - rect.left;
-        offsetY = e.clientY - rect.top;
-    }
+    offsetX = e.clientX - rect.left;
+    offsetY = e.clientY - rect.top;
 
-    drawCtx.lineWidth = document.getElementById('clpj_brushSize').innerHTML;
+    draw_drawCvs( startX, startY, offsetX, offsetY, document.getElementById('clpj_brushSize').innerHTML);
+
+    lineStack.push({ x1: startX/dispScale, x2: offsetX/dispScale, y1: startY/dispScale, y2: offsetY/dispScale, brushSize: drawCtx.lineWidth/dispScale});
+
+    // 次の描画に向けて現在の座標を保持（開始座標・終了座標を同じ座標にしてしまうと、マウスを高速に移動したときに歯抜け状態になる）
+    startX = offsetX;
+    startY = offsetY;
+}
+
+function draw_drawCvs( startX, startY, offsetX, offsetY, brushSize){
+    drawCtx.lineWidth = brushSize;
     drawCtx.lineCap = 'round'; // 先端の形状
     drawCtx.strokeStyle = 'rgba(0, 0, 0, 1)'; // 色はなんでもよいが、透過度は1にする
     drawCtx.globalCompositeOperation = 'destination-out' // 塗りつぶした個所を透明化
@@ -428,10 +540,6 @@ function erase_drawCvs(e) {
     drawCtx.lineTo(offsetX, offsetY); // 終了座標（現在座標）
     drawCtx.stroke(); // 描画
     drawCtx.closePath();
-
-    // 次の描画に向けて現在の座標を保持（開始座標・終了座標を同じ座標にしてしまうと、マウスを高速に移動したときに歯抜け状態になる）
-    startX = offsetX;
-    startY = offsetY;
 }
 
 // drawCanvasをクリア

@@ -2,7 +2,7 @@
 /*
 Plugin Name: climbing-project
 Description: ジム内でファイル課題を共有するサイトを構築するためのプラグイン。
-Version: 1.0.0
+Version: 1.0.1
 Author: Akihisa Kojima
 */
 if ( ! defined( 'ABSPATH' ) ) {

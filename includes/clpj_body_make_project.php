@@ -23,11 +23,11 @@ function CLpj_body_make_project( $content) {
            </select>
 </div>
 <div>
-    太さ：<input id="clpj_slider" type="range" min="1" max="100" value="10"><span id="clpj_brushSize">10</span>
-         <input type="button" id="clpj_btn_undo" value="Undo" disabled="true"><input type="button" id="clpj_btn_redo" value="Redo" disabled="true">
+    太さ：<input id="clpj_slider" type="range" min="1" max="100" value="30"><span id="clpj_brushSize">30</span>
+    <input type="button" id="clpj_btn_undo" value="Undo" disabled="true"><input type="button" id="clpj_btn_redo" value="Redo" disabled="true">
 </div>
 
-<div id="clpj_canvas-area" width="100%" style="height: 80vh; position: relative; overflow: auto;">
+<div id="clpj_canvas-area" width="100%" style="height: 80vh; position: relative; overflow: auto; touch-action: none;">
     <!-- 画像Canvas -->
     <canvas id="clpj_imageCanvas" style="top: 0px; left: 0; position: absolute;"></canvas>
     <!-- 描画Canvas -->
@@ -69,8 +69,6 @@ function CLpj_body_make_project( $content) {
     }
 
     $content = $content .'
-    <span id="clpj_dispX">0</span>
-    <span id="clpj_dispY">0</span>
     <span id="clpj_url_make_project">'. get_permalink( get_page_by_path( 'clpj_make_project')) .'</span>
 </div>';
 
